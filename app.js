@@ -77,12 +77,62 @@ app.use(express.urlencoded({ extended: true }));
 app.configure(express.rest());
 // Configure the Socket.io transport
 app.configure(socketio());
+
+const helmet = require('helmet');
+var session = require('express-session');
+var FileStore = require('session-file-store')(session); //storage only for sessions
+require('dotenv').config();
+require('dotenv').config();
+
+app.use(helmet());
+
+const cookieKey = 'user_sid';
+app.use(session({
+  store: new FileStore({path:'./db/sessions'}),
+  key: cookieKey,
+  saveUninitialized: false,
+  resave: false,
+  secret: process.env.COOKIE_SECRET, //secret passphrase for signing cookie
+  cookie: {
+      maxAge: 1000 * 60 * 60 * 2, //two hours
+      sameSite: true,
+      //secure: process.env.NODE_ENV === 'production'  // true when in production
+      // Does not work. Probably dude to the ngix reverse proxy connection with node app is not https
+  }
+}));
+
+
+const winston = require('winston');
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.timestamp(),
+    winston.format.align(),
+    winston.format.printf((info) => {
+      const {
+        timestamp, level, message, ...args
+      } = info;
+      const ts = new Date().toLocaleTimeString();
+      //const ts = timestamp.slice(0, 19).replace('T', ' ');
+      return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+    }),
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'logfile.log' })
+  ]
+});
+
+
+
+
 // Set up an error handler that gives us nicer errors
 app.use(express.errorHandler());
 
 // Start the server on port 3030
 const server = app.listen(process.env.APP_PORT);
-server.on('listening', () => console.log(`Feathers API started at localhost:${process.env.APP_PORT}`));
+server.on('listening', () => logger.info(`Feathers API started at localhost:${process.env.APP_PORT}`));
 
 /* HTTPS
 const https  = require('https');
@@ -108,11 +158,11 @@ app.use('messages', new Messages());
 
 async function processMessages() {
   app.service('messages').on('created', message => {
-    console.log('Created a new message', message);
+    logger.info('Created a new message', message);
   });
 
   app.service('messages').on('removed', message => {
-    console.log('Deleted message', message);
+    logger.info('Deleted message', message);
   });
 
   await app.service('messages').create({
@@ -128,7 +178,7 @@ async function processMessages() {
 
   const messageList = await app.service('messages').find();
 
-  console.log('Available messages', messageList);
+  logger.info('Available messages', messageList);
 }
 
 
