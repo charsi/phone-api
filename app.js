@@ -8,14 +8,15 @@ const helmet = require('helmet');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session); //storage only for sessions
 require('dotenv').config();
-
+const {Messages} = require('./services/messages.service');
 
 
 const app = express(feathers());
 
-const {Messages} = require('./services/messages.service');
+
 //app.configure(services);
 
+app.use(helmet());
 
 // Turn on JSON body parsing for REST services
 app.use(express.json());
@@ -28,7 +29,7 @@ app.configure(socketio());
 
 
 
-app.use(helmet());
+
 
 const cookieKey = 'user_sid';
 app.use(session({
