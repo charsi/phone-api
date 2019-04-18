@@ -4,6 +4,12 @@ const socketio = require('@feathersjs/socketio');
 
 //const { BadRequest } = require('@feathersjs/errors');
 
+const helmet = require('helmet');
+var session = require('express-session');
+var FileStore = require('session-file-store')(session); //storage only for sessions
+require('dotenv').config();
+
+
 
 const app = express(feathers());
 
@@ -20,11 +26,7 @@ app.configure(express.rest());
 // Configure the Socket.io transport
 app.configure(socketio());
 
-const helmet = require('helmet');
-var session = require('express-session');
-var FileStore = require('session-file-store')(session); //storage only for sessions
-require('dotenv').config();
-require('dotenv').config();
+
 
 app.use(helmet());
 
